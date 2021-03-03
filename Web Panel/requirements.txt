@@ -1,0 +1,5 @@
+Flask~=1.1.2
+Flask-Login
+requests~=2.25.1
+python-jose
+boto3~=1.16.53

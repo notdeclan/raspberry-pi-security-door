@@ -1,0 +1,146 @@
+{% extends 'layout.html' %}
+{% block title %} Dashboard {% endblock %}
+
+{% block navbar %}
+    {% include "navbar.html" %}
+{% endblock %}
+
+{% block content %}
+    {% if current_user.device %}
+        <div class="jumbotron jumbotron-fluid mb-0">
+            <div class="container">
+                <h1>{{ current_user.device.name }}</h1>
+                <h2 class="display-2" id="door-state-text">Closed</h2>
+            </div>
+        </div>
+        <div class="btn-group w-100" role="group">
+            <button type="button" id="arm-button" class="btn"></button>
+            <button type="button" id="alarm-button" class="btn alarm-button"></button>
+        </div>
+    {% else %}
+        <div class="jumbotron jumbotron-fluid mb-0">
+            <div class="container">
+                <h1 class="display-4" id="door-state-text">Add Device</h1>
+                <p class="lead" id="arm-state-text">Welcome {{ current_user.username }}, its time to setup your security device</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post" action="">
+                    <div class="form-group">
+                        <label for="deviceInput">Device ID</label>
+                        <input type="text" class="form-control" id="deviceInput" placeholder="Enter device id">
+                        <small class="form-text text-muted">This should be displayed on the display</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pinInput">Pin</label>
+                        <input type="text" name="pin" id="pinInput">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPinInput">Confirm Pin</label>
+                        <input type="text" name="confirmPin" id="confirmPinInput">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+{% block scripts %}
+    <script>
+        $('#pinInput').pincodeInput({inputs:4});
+        $('#confirmPinInput').pincodeInput({inputs:4});
+
+        const   deviceId            =  "{{ current_user.device.id }}";
+
+        const   armButton           = $("#arm-button");                 // Arm Button
+        const   alarmButton         = $("#alarm-button");               // Alarm Button
+        const   doorStateText       = $("#door-state-text");            // Door State
+
+        let     door_state          = false;
+        let     arm_state           = false;
+        let     alarm_state         = false;
+
+        let socket = new WebSocket(
+            "wss://e15jdyr5ml.execute-api.us-east-1.amazonaws.com/production?deviceId=" + deviceId
+        );
+
+        socket.onopen = function(e) {
+                console.log(`Connected to socket for: ${deviceId}`);
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                console.log(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+                console.log('Connection died');
+            }
+        };
+
+        socket.onerror = function(error) {
+          console.log(`Socket error for: ${deviceId}`);
+          console.error(error);
+        };
+
+        socket.onmessage = function(event) {
+            console.log(`Received update`);
+            const response = JSON.parse(event.data);
+            console.log(response)
+
+            door_state = response["door_state"]
+            arm_state = response['arm_state'];
+            alarm_state = response["alarm_state"]
+
+            if (door_state) {
+                doorStateText.html("Opened");
+            } else {
+                doorStateText.html("Closed");
+            }
+
+            if (arm_state) {
+                armButton
+                    .removeClass("btn-success")
+                    .addClass("btn-warning")
+                    .html("Disarm");
+            } else {
+                armButton
+                    .removeClass("btn-warning")
+                    .addClass("btn-success")
+                    .html("Arm");
+            }
+
+            if(alarm_state) {
+                alarmButton
+                    .removeClass("btn-danger")
+                    .addClass("btn-primary")
+                    .html("Stop Alarm");
+            } else {
+                alarmButton
+                    .removeClass("btn-primary")
+                    .addClass("btn-danger")
+                    .html("Raise Alarm");
+            }
+        };
+
+
+        function sendAction(action, value) {
+            socket.send(JSON.stringify({
+                "action": "action",
+                "device": deviceId,
+                "name": action,
+                "value": value
+            }))
+        }
+
+        armButton.click(function () {
+            sendAction("arm_state", !arm_state)
+        });
+
+        alarmButton.click(function () {
+            sendAction("alarm_state", !alarm_state)
+        });
+    </script>
+{% endblock %}

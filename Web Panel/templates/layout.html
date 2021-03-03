@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.modifications.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-pincode-input.css') }}">
+</head>
+<body>
+    {% block navbar %}
+    {% endblock %}
+
+    {# Display Content #}
+    <main role="main" class="container pt-5">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-info mb-0 mt-2">
+                        <a class="close" data-dismiss="alert">&times;</a>
+                        <strong>{{ category }}</strong>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %} {% endblock %}
+    </main>
+
+    <footer>
+      <div class="container text-center">
+        <span class="text-muted">&copy; 2020 - Declan Woodham</span>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-pincode-input.js') }}"></script>
+
+    {# Display Scripts #}
+    {% block scripts %} {% endblock %}
+</body>
+</html>
